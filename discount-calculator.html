@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Discount Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --border: #2a2a2a;
+      --accent: #c8a96e;
+      --accent-dim: #7a6240;
+      --text: #f0ece3;
+      --text-muted: #7a756b;
+      --red: #e05a4e;
+      --green: #5ab88a;
+      --radius: 4px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      overflow: hidden;
+    }
+
+    /* Background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(200,169,110,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(200,169,110,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* Header */
+    .header {
+      margin-bottom: 2.5rem;
+      animation: fadeDown 0.6s ease both;
+    }
+    .header-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.6rem;
+    }
+    .header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+    .header h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      animation: fadeUp 0.6s ease 0.1s both;
+    }
+
+    /* Inputs */
+    .field {
+      margin-bottom: 1.5rem;
+    }
+    .field label {
+      display: block;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .input-row {
+      display: flex;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color 0.2s;
+      overflow: hidden;
+    }
+    .input-row:focus-within {
+      border-color: var(--accent);
+    }
+    .input-row .prefix {
+      padding: 0 0.75rem;
+      color: var(--accent-dim);
+      font-size: 0.9rem;
+      user-select: none;
+      border-right: 1px solid var(--border);
+    }
+    .input-row input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 0.85rem 0.9rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 1rem;
+      color: var(--text);
+      width: 100%;
+    }
+    .input-row input::placeholder { color: var(--text-muted); }
+    .input-row .suffix {
+      padding: 0 0.75rem;
+      color: var(--accent-dim);
+      font-size: 0.9rem;
+      user-select: none;
+      border-left: 1px solid var(--border);
+    }
+
+    /* Slider */
+    .slider-wrap {
+      margin-top: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .slider-wrap input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 2px;
+      background: var(--border);
+      border-radius: 99px;
+      outline: none;
+      cursor: pointer;
+    }
+    .slider-wrap input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .slider-wrap input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.3);
+    }
+    .slider-val {
+      font-size: 0.8rem;
+      color: var(--accent);
+      min-width: 2.5rem;
+      text-align: right;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1.5rem 0;
+    }
+
+    /* Result panel */
+    .result {
+      display: none;
+      animation: fadeUp 0.4s ease both;
+    }
+    .result.visible { display: block; }
+
+    .result-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-bottom: 1.2rem;
+    }
+    .breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+    .breakdown-row .name { color: var(--text-muted); }
+    .breakdown-row .val { }
+    .breakdown-row.savings .val { color: var(--red); }
+
+    .final-price {
+      background: var(--bg);
+      border: 1px solid var(--accent-dim);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .final-price .label {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-style: italic;
+      color: var(--accent);
+    }
+    .final-price .amount {
+      font-size: 1.6rem;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      color: var(--green);
+    }
+
+    /* Tag badge */
+    .tag {
+      display: inline-block;
+      margin-top: 0.9rem;
+      padding: 0.25rem 0.6rem;
+      background: rgba(200,169,110,0.08);
+      border: 1px solid var(--accent-dim);
+      border-radius: 99px;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    /* Button */
+    .btn {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.85rem;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    /* Reset link */
+    .reset {
+      display: block;
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color 0.2s;
+      text-decoration: none;
+      border: none;
+      background: none;
+      width: 100%;
+    }
+    .reset:hover { color: var(--accent); }
+
+    /* Animations */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Error state */
+    .error-msg {
+      font-size: 0.72rem;
+      color: var(--red);
+      margin-top: 0.35rem;
+      display: none;
+    }
+    .error-msg.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+  <div class="header">
+    <p class="header-label">Price Calculator</p>
+    <h1>How much will<br>you <em>actually</em> pay?</h1>
+  </div>
+
+  <div class="card">
+    <!-- Original price -->
+    <div class="field">
+      <label for="price">Original Price</label>
+      <div class="input-row">
+        <span class="prefix">€</span>
+        <input type="number" id="price" placeholder="0.00" min="0" step="0.01" inputmode="decimal"/>
+      </div>
+      <p class="error-msg" id="price-error">Please enter a valid price.</p>
+    </div>
+
+    <!-- Coupon -->
+    <div class="field">
+      <label for="coupon">Coupon Discount</label>
+      <div class="input-row">
+        <input type="number" id="coupon" placeholder="0" min="0" max="100" step="1" inputmode="decimal"/>
+        <span class="suffix">%</span>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" id="slider" min="0" max="100" value="0" step="1"/>
+        <span class="slider-val" id="slider-val">0%</span>
+      </div>
+      <p class="error-msg" id="coupon-error">Enter a value between 0 and 100.</p>
+    </div>
+
+    <button class="btn" onclick="calculate()">Calculate Final Price</button>
+
+    <!-- Result -->
+    <div class="result" id="result">
+      <div class="divider"></div>
+      <p class="result-label">Breakdown</p>
+      <div class="breakdown">
+        <div class="breakdown-row">
+          <span class="name">Original price</span>
+          <span class="val" id="r-original">—</span>
+        </div>
+        <div class="breakdown-row savings">
+          <span class="name">Discount applied</span>
+          <span class="val" id="r-discount">—</span>
+        </div>
+      </div>
+      <div class="final-price">
+        <span class="label">Final price</span>
+        <span class="amount" id="r-final">—</span>
+      </div>
+      <span class="tag" id="r-tag">You save —</span>
+
+      <button class="reset" onclick="reset()">↺ Start over</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const priceInput  = document.getElementById('price');
+  const couponInput = document.getElementById('coupon');
+  const slider      = document.getElementById('slider');
+  const sliderVal   = document.getElementById('slider-val');
+
+  // Sync slider ↔ coupon input
+  couponInput.addEventListener('input', () => {
+    let v = Math.min(100, Math.max(0, parseFloat(couponInput.value) || 0));
+    slider.value = v;
+    sliderVal.textContent = v + '%';
+  });
+  slider.addEventListener('input', () => {
+    couponInput.value = slider.value;
+    sliderVal.textContent = slider.value + '%';
+  });
+
+  function fmt(n) {
+    return '€' + n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function calculate() {
+    const priceErr  = document.getElementById('price-error');
+    const couponErr = document.getElementById('coupon-error');
+    priceErr.classList.remove('visible');
+    couponErr.classList.remove('visible');
+
+    const price  = parseFloat(priceInput.value);
+    const coupon = parseFloat(couponInput.value);
+
+    let valid = true;
+    if (isNaN(price) || price < 0) { priceErr.classList.add('visible');  valid = false; }
+    if (isNaN(coupon) || coupon < 0 || coupon > 100) { couponErr.classList.add('visible'); valid = false; }
+    if (!valid) return;
+
+    const discount = price * (coupon / 100);
+    const final    = price - discount;
+
+    document.getElementById('r-original').textContent = fmt(price);
+    document.getElementById('r-discount').textContent  = '− ' + fmt(discount);
+    document.getElementById('r-final').textContent     = fmt(final);
+    document.getElementById('r-tag').textContent       = `You save ${fmt(discount)} (${coupon}%)`;
+
+    const result = document.getElementById('result');
+    result.classList.remove('visible');
+    // Trigger reflow for re-animation
+    void result.offsetWidth;
+    result.classList.add('visible');
+  }
+
+  function reset() {
+    priceInput.value  = '';
+    couponInput.value = '';
+    slider.value      = 0;
+    sliderVal.textContent = '0%';
+    document.getElementById('result').classList.remove('visible');
+    document.getElementById('price-error').classList.remove('visible');
+    document.getElementById('coupon-error').classList.remove('visible');
+    priceInput.focus();
+  }
+
+  // Allow Enter key to trigger calculation
+  [priceInput, couponInput].forEach(el => {
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+  });
+</script>
+
+</body>
+</html>
